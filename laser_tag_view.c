@@ -7,7 +7,6 @@ struct LaserTagView {
 };
 
 typedef struct {
-    LaserTagTeam team;
     uint8_t health;
     uint16_t ammo;
     uint32_t game_time;
@@ -22,8 +21,7 @@ static void laser_tag_view_draw_callback(Canvas* canvas, void* model) {
     canvas_clear(canvas);
     canvas_set_color(canvas, ColorBlack);
 
-    canvas_draw_str_aligned(
-        canvas, 5, 10, AlignLeft, AlignBottom, m->team == TeamRed ? "Team: Red" : "Team: Blue");
+    canvas_draw_str_aligned(canvas, 5, 10, AlignLeft, AlignBottom, "Solo");
 
     canvas_draw_str_aligned(canvas, 5, 25, AlignLeft, AlignBottom, "Health:");
     canvas_draw_frame(canvas, 55, 20, 60, 10);
@@ -104,7 +102,6 @@ void laser_tag_view_update(LaserTagView* laser_tag_view, GameState* game_state) 
         laser_tag_view->view,
         LaserTagViewModel * model,
         {
-            model->team = game_state_get_team(game_state);
             model->health = game_state_get_health(game_state);
             model->ammo = game_state_get_ammo(game_state);
             model->game_time = game_state_get_time(game_state);

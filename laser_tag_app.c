@@ -33,17 +33,7 @@ static void laser_tag_app_timer_callback(void* context) {
     LaserTagApp* app = context;
     FURI_LOG_D(TAG, "Timer callback triggered");
 
-    if(app->state == LaserTagStateSplashScreen) {
-        if(game_state_get_time(app->game_state) >= 2) {
-            FURI_LOG_I(TAG, "Splash screen time over, switching to TeamSelect");
-            app->state = LaserTagStateTeamSelect;
-            game_state_reset(app->game_state);
-            FURI_LOG_D(TAG, "Game state reset after splash screen");
-        } else {
-            FURI_LOG_D(TAG, "Updating splash screen time");
-            game_state_update_time(app->game_state, 1);
-        }
-    } else if(app->state == LaserTagStateGame) {
+    if(app->state == LaserTagStateGame) {
         FURI_LOG_D(TAG, "Updating game time by 1 second");
         game_state_update_time(app->game_state, 1);
     }
@@ -71,52 +61,13 @@ static void laser_tag_app_draw_callback(Canvas* canvas, void* context) {
     if(app->state == LaserTagStateSplashScreen) {
         canvas_clear(canvas);
         canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str(canvas, 5, 20, "Laser Tag!");
+        canvas_draw_str(canvas, 5, 20, "Laser Tag: Free4All!");
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str(canvas, 5, 40, "https://github.com/");
-        canvas_draw_str(canvas, 5, 50, "RocketGod-git/");
-        canvas_draw_str(canvas, 5, 60, "Flipper-Zero-Laser-Tag");
+        canvas_draw_str(canvas, 5, 50, "otomir23/");
+        canvas_draw_str(canvas, 5, 60, "Laser-Tag-Free4All");
         canvas_draw_frame(canvas, 0, 0, 128, 64);
         canvas_draw_line(canvas, 0, 30, 127, 30);
-        canvas_draw_circle(canvas, 110, 15, 12);
-        canvas_draw_disc(canvas, 110, 15, 4);
-
-    } else if(app->state == LaserTagStateTeamSelect) {
-        canvas_clear(canvas);
-        canvas_draw_frame(canvas, 0, 0, 128, 64);
-
-        canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str(canvas, 14, 13, "SELECT TEAM");
-
-        canvas_draw_line(canvas, 0, 16, 127, 16);
-
-        canvas_set_font(canvas, FontSecondary);
-        canvas_draw_str(canvas, 5, 30, "LEFT");
-        canvas_draw_str(canvas, 95, 30, "RIGHT");
-
-        canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str(canvas, 10, 45, "RED");
-        canvas_draw_str(canvas, 95, 45, "BLUE");
-
-        // Gun icon for Red team
-        canvas_draw_line(canvas, 10, 50, 25, 50);
-        canvas_draw_line(canvas, 25, 50, 25, 55);
-        canvas_draw_line(canvas, 10, 55, 25, 55);
-        canvas_draw_line(canvas, 15, 55, 15, 60);
-
-        // Gun icon for Blue team (facing left)
-        canvas_draw_line(canvas, 95, 50, 110, 50);
-        canvas_draw_line(canvas, 95, 50, 95, 55);
-        canvas_draw_line(canvas, 95, 55, 110, 55);
-        canvas_draw_line(canvas, 105, 55, 105, 60);
-
-        // Laser beams
-        canvas_draw_line(canvas, 25, 52, 60, 32);
-        canvas_draw_line(canvas, 95, 52, 60, 32);
-
-        // Targets where lasers hit
-        canvas_draw_circle(canvas, 60, 32, 5);
-        canvas_draw_circle(canvas, 60, 32, 2);
 
     } else if(app->state == LaserTagStateGameOver) {
         canvas_clear(canvas);
@@ -146,17 +97,6 @@ static void laser_tag_app_draw_callback(Canvas* canvas, void* context) {
     FURI_LOG_D(TAG, "Exiting draw callback");
 }
 
-static bool matching_team(LaserTagApp* app, uint8_t data) {
-    if(data == 0) {
-        return true;
-    } else if(game_state_get_team(app->game_state) == TeamRed) {
-        return data == 0xA1;
-    } else if(game_state_get_team(app->game_state) == TeamBlue) {
-        return data == 0xB2;
-    }
-    return false;
-}
-
 static void tag_callback(uint8_t* data, uint8_t length, void* context) {
     LaserTagApp* app = (LaserTagApp*)context;
 
@@ -177,21 +117,17 @@ static void tag_callback(uint8_t* data, uint8_t length, void* context) {
         return;
     }
 
-    if(matching_team(app, data[2])) {
-        if(data[3] == 0xFD) {
-            uint16_t max_delta_ammo = data[4];
-            uint16_t ammo = game_state_get_ammo(app->game_state);
-            uint16_t delta_ammo = INITIAL_AMMO - ammo;
-            if(delta_ammo > max_delta_ammo) {
-                delta_ammo = max_delta_ammo;
-            }
-            game_state_increase_ammo(app->game_state, delta_ammo);
-            FURI_LOG_D(TAG, "Increased ammo by: %d", delta_ammo);
-        } else {
-            FURI_LOG_W(TAG, "Tag action unknown: %02x %02x", data[3], data[4]);
+    if(data[3] == 0xFD) {
+        uint16_t max_delta_ammo = data[4];
+        uint16_t ammo = game_state_get_ammo(app->game_state);
+        uint16_t delta_ammo = INITIAL_AMMO - ammo;
+        if(delta_ammo > max_delta_ammo) {
+            delta_ammo = max_delta_ammo;
         }
+        game_state_increase_ammo(app->game_state, delta_ammo);
+        FURI_LOG_D(TAG, "Increased ammo by: %d", delta_ammo);
     } else {
-        FURI_LOG_I(TAG, "Tag not for team: %02x", data[2]);
+        FURI_LOG_W(TAG, "Tag action unknown: %02x %02x", data[3], data[4]);
     }
 }
 
@@ -291,13 +227,8 @@ void laser_tag_app_fire(LaserTagApp* app) {
 
     notification_message(app->notifications, &sequence_short_beep);
 
-    if(game_state_get_team(app->game_state) == TeamBlue) {
-        notification_message(app->notifications, &sequence_blink_blue_100);
-        FURI_LOG_I(TAG, "Notifying user with blink blue and short beep");
-    } else {
-        notification_message(app->notifications, &sequence_blink_red_100);
-        FURI_LOG_I(TAG, "Notifying user with blink red and short beep");
-    }
+    notification_message(app->notifications, &sequence_blink_white_100);
+    FURI_LOG_I(TAG, "Notifying user with blink white and short beep");
 
     app->need_redraw = true;
 }
@@ -341,9 +272,6 @@ static bool laser_tag_app_enter_game_state(LaserTagApp* app) {
         return false;
     }
     FURI_LOG_I(TAG, "IR controller allocated");
-
-    infrared_controller_set_team(app->ir_controller, game_state_get_team(app->game_state));
-    FURI_LOG_D(TAG, "IR controller team set");
     app->need_redraw = true;
     return true;
 }
@@ -370,19 +298,10 @@ int32_t laser_tag_app(void* p) {
         if(status == FuriStatusOk) {
             FURI_LOG_D(TAG, "Received input event: type=%d, key=%d", event.type, event.key);
             if(event.type == InputTypePress || event.type == InputTypeRepeat) {
-                if(app->state == LaserTagStateSplashScreen ||
-                   app->state == LaserTagStateTeamSelect) {
+                if(app->state == LaserTagStateSplashScreen) {
                     switch(event.key) {
-                    case InputKeyLeft:
-                        FURI_LOG_I(TAG, "Red team selected");
-                        game_state_set_team(app->game_state, TeamRed);
-                        if(!laser_tag_app_enter_game_state(app)) {
-                            running = false;
-                        }
-                        break;
-                    case InputKeyRight:
-                        FURI_LOG_I(TAG, "Blue team selected");
-                        game_state_set_team(app->game_state, TeamBlue);
+                    case InputKeyOk:
+                        FURI_LOG_I(TAG, "Ok pressed, starting");
                         if(!laser_tag_app_enter_game_state(app)) {
                             running = false;
                         }

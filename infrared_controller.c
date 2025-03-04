@@ -97,11 +97,9 @@ static void infrared_rx_callback(void* context, InfraredWorkerSignal* received_s
             (unsigned long)message->address,
             (unsigned long)message->command);
 
-        if((controller->team == TeamRed && message->command == IR_COMMAND_BLUE_TEAM) ||
-           (controller->team == TeamBlue && message->command == IR_COMMAND_RED_TEAM)) {
+        if (message->command == IR_COMMAND_SHOOT) {
             controller->hit_received = true;
-            FURI_LOG_I(
-                TAG, "Hit detected for team: %s", controller->team == TeamRed ? "Red" : "Blue");
+            FURI_LOG_I(TAG, "Hit detected");
             notification_message_block(controller->notification, &sequence_hit);
         }
     } else {
@@ -121,7 +119,6 @@ InfraredController* infrared_controller_alloc() {
         return NULL;
     }
 
-    controller->team = TeamRed;
     controller->worker = infrared_worker_alloc();
     controller->signal = infrared_signal_alloc();
     controller->notification = furi_record_open(RECORD_NOTIFICATION);
@@ -169,18 +166,11 @@ void infrared_controller_free(InfraredController* controller) {
     }
 }
 
-void infrared_controller_set_team(InfraredController* controller, LaserTagTeam team) {
-    FURI_LOG_I(TAG, "Setting team to %s", team == TeamRed ? "Red" : "Blue");
-    controller->team = team;
-}
-
 void infrared_controller_send(InfraredController* controller) {
     FURI_LOG_I(TAG, "Preparing to send infrared signal");
 
     InfraredMessage message = {
-        .protocol = InfraredProtocolNEC,
-        .address = 0x42,
-        .command = (controller->team == TeamRed) ? IR_COMMAND_RED_TEAM : IR_COMMAND_BLUE_TEAM};
+        .protocol = InfraredProtocolNEC, .address = 0x42, .command = IR_COMMAND_SHOOT};
 
     FURI_LOG_I(
         TAG,

@@ -4,13 +4,7 @@
 #include <stdbool.h>
 
 typedef enum {
-    TeamRed,
-    TeamBlue
-} LaserTagTeam;
-
-typedef enum {
     LaserTagStateSplashScreen,
-    LaserTagStateTeamSelect,
     LaserTagStateGame,
     LaserTagStateGameOver,
 } LaserTagState;
@@ -19,9 +13,6 @@ typedef struct GameState GameState;
 
 GameState* game_state_alloc();
 void game_state_reset(GameState* state);
-
-void game_state_set_team(GameState* state, LaserTagTeam team);
-LaserTagTeam game_state_get_team(GameState* state);
 
 void game_state_decrease_health(GameState* state, uint8_t amount);
 void game_state_increase_health(GameState* state, uint8_t amount);

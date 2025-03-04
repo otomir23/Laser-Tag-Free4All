@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 struct GameState {
-    LaserTagTeam team;
     uint8_t health;
     uint16_t ammo;
     uint32_t game_time;
@@ -16,7 +15,6 @@ GameState* game_state_alloc() {
         FURI_LOG_E("GameState", "Failed to allocate GameState");
         return NULL;
     }
-    state->team = TeamRed;
     state->health = INITIAL_HEALTH;
     state->ammo = INITIAL_AMMO;
     state->game_time = 0;
@@ -32,17 +30,6 @@ void game_state_reset(GameState* state) {
     state->game_time = 0;
     state->game_over = false;
     FURI_LOG_I("GameState", "GameState reset");
-}
-
-void game_state_set_team(GameState* state, LaserTagTeam team) {
-    furi_assert(state);
-    state->team = team;
-    FURI_LOG_I("GameState", "Team set to %s", (team == TeamRed) ? "Red" : "Blue");
-}
-
-LaserTagTeam game_state_get_team(GameState* state) {
-    furi_assert(state);
-    return state->team;
 }
 
 void game_state_decrease_health(GameState* state, uint8_t amount) {
